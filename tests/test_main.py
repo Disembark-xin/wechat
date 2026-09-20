@@ -48,10 +48,11 @@ class ReminderTests(unittest.TestCase):
 
         data = build_message(config, self.weather, self.now)
 
-        self.assertIn("天气：晴", data["part1"]["value"])
-        self.assertIn("提交报告", data["part2"]["value"])
-        self.assertIn("生日提醒", data["part3"]["value"])
-        self.assertIn("加油", data["part5"]["value"])
+        self.assertEqual(data["date"]["value"], "2026年09月20日 星期日")
+        self.assertIn("天气：晴", data["region"]["value"])
+        self.assertIn("提交报告", data["weather"]["value"])
+        self.assertIn("生日提醒", data["temp"]["value"])
+        self.assertIn("加油", data["wind_dir"]["value"])
 
 
 if __name__ == "__main__":
