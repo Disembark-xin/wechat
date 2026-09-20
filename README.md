@@ -57,7 +57,7 @@
 4. 在 `Variables` 新增 `QWEATHER_API_HOST`，填写专属 API Host，不要带 `https://`。
 5. 打开 `Actions → 微信每日提醒 → Run workflow`。第一次保留 `dry_run=true` 查看预览；第二次设成 `false` 实际发送。
 
-当前工作流按你的配置每 5 分钟运行一次，可在 `.github/workflows/daily-reminder.yml` 修改 `cron`。
+当前工作流每天北京时间早上 07:45 运行（UTC 前一天 23:45，`cron: "45 23 * * *"`），可在 `.github/workflows/daily-reminder.yml` 修改。
 
 ## 本地测试
 
