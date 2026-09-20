@@ -8,10 +8,9 @@ on:
         required: true
         type: boolean
         default: true
-  schedule:
-    # 每天北京时间 08:07，避开整点的 Actions 高峰。
-    - cron: "7 8 * * *"
-      timezone: "Asia/Shanghai"
+schedule:
+  - cron: "*/5 * * * *"
+    timezone: "Asia/Shanghai"
 
 permissions:
   contents: read
