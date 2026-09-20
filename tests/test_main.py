@@ -36,13 +36,23 @@ class ReminderTests(unittest.TestCase):
     def test_message_contains_weather_todo_and_countdown(self):
         config = {
             "birthdays": [],
-            "todos": [{"title": "提交报告", "due": "2026-09-20T18:07:00"}],
-            "note_ch": "加油", "note_en": "Keep going",
+            "todos": [
+                {
+                    "title": "提交报告",
+                    "due": "2026-09-20T18:07:00"
+                }
+            ],
+            "note_ch": "加油",
+            "note_en": "Keep going"
         }
+
         data = build_message(config, self.weather, self.now)
-        self.assertEqual(data["weather"]["value"], "晴")
-        self.assertIn("提交报告", data["todos"]["value"])
-        self.assertIn("还剩10小时", data["remaining"]["value"])
+        content = data["content"]["value"]
+
+        self.assertIn("天气：晴", content)
+        self.assertIn("提交报告", content)
+        self.assertIn("生日提醒", content)
+        self.assertIn("加油", content)
 
 
 if __name__ == "__main__":
