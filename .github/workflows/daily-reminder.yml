@@ -8,9 +8,9 @@ on:
         required: true
         type: boolean
         default: true
-schedule:
-  - cron: "*/5 * * * *"
-    timezone: "Asia/Shanghai"
+
+  schedule:
+    - cron: "*/5 * * * *"
 
 permissions:
   contents: read
@@ -19,6 +19,7 @@ jobs:
   remind:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
       - name: 获取仓库代码
         uses: actions/checkout@v6
