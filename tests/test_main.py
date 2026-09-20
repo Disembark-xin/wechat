@@ -33,33 +33,26 @@ class ReminderTests(unittest.TestCase):
     def test_next_solar_birthday(self):
         self.assertEqual(next_birthday("1997-01-01", date(2026, 9, 20)), date(2027, 1, 1))
 
-    def test_message_contains_weather_todo_and_countdown(self):
+    def test_message_is_paginated_into_five_short_fields(self):
         config = {
             "birthdays": [],
-            "todos": [
-                {
-                    "title": "提交报告",
-                    "due": "2026-09-20T18:07:00"
-                }
-            ],
+            "todos": [{"title": "提交报告", "due": "2026-09-20T18:07:00"}],
             "note_ch": "加油",
             "note_en": "Keep going"
         }
 
-        data = build_message(config, self.weather, self.now)
+        pages = build_message(config, self.weather, self.now)
 
-        self.assertEqual(data["date"]["value"], "2026年09月20日 星期日")
-        self.assertEqual(data["region"]["value"], "郑州")
-        self.assertEqual(data["weather"]["value"], "晴")
-        self.assertEqual(data["temp"]["value"], "25°C")
-        self.assertEqual(data["wind_dir"]["value"], "东南风")
-        self.assertIn("提交报告", data["todos"]["value"])
-        self.assertIn("今天截止", data["remaining"]["value"])
-        self.assertIn("生日提醒", data["birthday"]["value"])
-        self.assertEqual(data["love_day"]["value"], "未设置纪念日")
-        self.assertEqual(data["note_ch"]["value"], "加油")
-        self.assertEqual(data["note_en"]["value"], "Keep going")
-        self.assertEqual(data["attribution"]["value"], "天气数据：和风天气")
+        self.assertGreaterEqual(len(pages), 2)
+        self.assertTrue(all(set(page) == {"line1", "line2", "line3", "line4", "line5"} for page in pages))
+        values = [page[f"line{i}"]["value"] for page in pages for i in range(1, 6)]
+        self.assertTrue(all(len(value) <= 20 for value in values))
+        message = "\n".join(values)
+        self.assertIn("天气：晴", message)
+        self.assertIn("提交报告", message)
+        self.assertIn("今天截止", message)
+        self.assertIn("生日提醒", message)
+        self.assertIn("加油", message)
 
 
 if __name__ == "__main__":

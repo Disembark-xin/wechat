@@ -259,7 +259,7 @@ def remaining(due: datetime | None, now: datetime) -> str:
     return f"还剩{duration(seconds)}"
 
 
-def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime) -> dict[str, dict[str, str]]:
+def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime) -> list[dict[str, dict[str, str]]]:
     tasks = load_tasks(config)
     todos = "\n".join(f"{i}. {task.title}" for i, task in enumerate(tasks, 1)) or "今天没有未完成待办"
     countdown = "\n".join(f"{i}. {remaining(task.due, now)}" for i, task in enumerate(tasks, 1)) or "暂无"
@@ -286,22 +286,41 @@ def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime
         return {"value": text, "color": color}
 
     birthday = birthday_text(config, now.date())
-    overdue = any(task.due and task.due < now for task in tasks)
 
-    return {
-        "date": field(f"{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}"),
-        "region": field(weather["region"]),
-        "weather": field(weather["weather"]),
-        "temp": field(weather["temp"], "#E67E22"),
-        "wind_dir": field(weather["wind_dir"]),
-        "todos": field(todos),
-        "remaining": field(countdown, "#E64340" if overdue else "#173177"),
-        "birthday": field(birthday),
-        "love_day": field(love_day),
-        "note_ch": field(note_ch, "#8E44AD"),
-        "note_en": field(note_en, "#888888"),
-        "attribution": field(weather["attribution"], "#999999")
-    }
+    logical_lines = [
+        f"日期：{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}",
+        f"地区：{weather['region']}",
+        f"天气：{weather['weather']}",
+        f"温度：{weather['temp']}",
+        f"风向：{weather['wind_dir']}",
+        "今日待办：",
+        *todos.splitlines(),
+        "剩余时间：",
+        *countdown.splitlines(),
+        birthday,
+        f"在一起{love_day}",
+        note_ch,
+        note_en,
+        weather["attribution"],
+    ]
+
+    # 测试号模板只稳定显示五个短字段；长行先切开，再按五行自动分页。
+    wrapped_lines: list[str] = []
+    for line in logical_lines:
+        wrapped_lines.extend([line[i:i + 20] for i in range(0, len(line), 20)] or [" "])
+
+    pages: list[dict[str, dict[str, str]]] = []
+    for start in range(0, len(wrapped_lines), 5):
+        batch = wrapped_lines[start:start + 5]
+        batch += [" "] * (5 - len(batch))
+        pages.append({
+            "line1": field(batch[0]),
+            "line2": field(batch[1]),
+            "line3": field(batch[2]),
+            "line4": field(batch[3]),
+            "line5": field(batch[4]),
+        })
+    return pages
 
 
 def send_message(config: dict[str, Any], token: str, user: str, data: dict[str, dict[str, str]]) -> None:
@@ -339,13 +358,14 @@ def main() -> int:
         print(json.dumps(build_message(config, preview_weather, now), ensure_ascii=False, indent=2))
         return 0
 
-    data = build_message(config, get_weather(config), now)
+    pages = build_message(config, get_weather(config), now)
     token = get_access_token(config)
     users = config.get("user", [])
     if not isinstance(users, list) or not users:
         raise ReminderError("user 必须是包含至少一个 OpenID 的数组")
     for user in users:
-        send_message(config, token, str(user).strip(), data)
+        for page in pages:
+            send_message(config, token, str(user).strip(), page)
     return 0
 
 
