@@ -1,0 +1,24 @@
+{
+  "app_id": "${wx882b0e3936b59543}",
+  "app_secret": "${00de60a8ba3ad2e0bb033b8c233e1cff}",
+  "template_id": "${p2Nujcq0N10IHPYSa6gUYt_-HB-0JYLis2mBQ-7okVM}",
+  "user": ["${ofOP320Oc_kKCGY194ZRhsrjYWSM}"],
+
+  "weather_key": "${HE2209152218351029}",
+  "weather_api_host": "${km4t268kw5.re.qweatherapi.com}",
+  "region": "许昌市",
+
+  "birthdays": [
+    {"name": "生日", "birthday": "2026-04-02"}
+  ],
+  "love_date": "2026-08-21",
+
+  "url": "",
+
+  "todos": [
+   {
+    "title": "记得带军训刀呦",
+    "status": "pending"
+  }
+  ]
+}
