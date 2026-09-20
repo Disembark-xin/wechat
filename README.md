@@ -1,5 +1,16 @@
 # 微信公众号每日提醒
 
+
+PrivateKey:
+ -----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIMe1LFcDWPW/nBk9Z6j2ewIcxeunpVndkrLObM6eSuz7
+-----END PRIVATE KEY----- 
+
+PublicKey:
+ -----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAAyWeJ3ocRc+AcVC94kguVEUdoO56gr3p39L9dkMPb98=
+-----END PUBLIC KEY-----
+
 项目结构与你给的示例一致：核心就是 `.github/`、`config.txt`、`main.py` 和 `requirements.txt`。它会每天显示日期、星期、郑州天气、温度、风向、待办、每项剩余时间/逾期时间、生日倒计时、纪念日和中英文句子，然后通过公众号模板消息发送。
 
 ## 先处理已经暴露的密钥
