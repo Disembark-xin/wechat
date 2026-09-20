@@ -286,24 +286,21 @@ def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime
         return {"value": text, "color": color}
 
     birthday = birthday_text(config, now.date())
+    overdue = any(task.due and task.due < now for task in tasks)
 
-    weather_summary = (
-        f"地区：{weather['region']}\n"
-        f"天气：{weather['weather']}\n"
-        f"温度：{weather['temp']}\n"
-        f"风向：{weather['wind_dir']}"
-    )
-
-    birthday_and_love = f"{birthday}\n在一起{love_day}"
-    daily_note = f"{note_ch}\n{note_en}\n{weather['attribution']}"
-
-    # 复用该微信模板账号已经验证可以显示的五个参数名。
     return {
         "date": field(f"{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}"),
-        "region": field(weather_summary),
-        "weather": field(todos),
-        "temp": field(birthday_and_love),
-        "wind_dir": field(daily_note)
+        "region": field(weather["region"]),
+        "weather": field(weather["weather"]),
+        "temp": field(weather["temp"], "#E67E22"),
+        "wind_dir": field(weather["wind_dir"]),
+        "todos": field(todos),
+        "remaining": field(countdown, "#E64340" if overdue else "#173177"),
+        "birthday": field(birthday),
+        "love_day": field(love_day),
+        "note_ch": field(note_ch, "#8E44AD"),
+        "note_en": field(note_en, "#888888"),
+        "attribution": field(weather["attribution"], "#999999")
     }
 
 
