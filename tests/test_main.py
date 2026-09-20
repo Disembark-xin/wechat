@@ -47,12 +47,11 @@ class ReminderTests(unittest.TestCase):
         }
 
         data = build_message(config, self.weather, self.now)
-        content = data["content"]["value"]
 
-        self.assertIn("天气：晴", content)
-        self.assertIn("提交报告", content)
-        self.assertIn("生日提醒", content)
-        self.assertIn("加油", content)
+        self.assertIn("天气：晴", data["part1"]["value"])
+        self.assertIn("提交报告", data["part2"]["value"])
+        self.assertIn("生日提醒", data["part3"]["value"])
+        self.assertIn("加油", data["part5"]["value"])
 
 
 if __name__ == "__main__":
