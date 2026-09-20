@@ -285,20 +285,29 @@ def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime
         text = text if len(text) <= 600 else text[:599] + "…"
         return {"value": text, "color": color}
 
-    overdue = any(task.due and task.due < now for task in tasks)
+    birthday = birthday_text(config, now.date())
+
+    content = (
+        f"日期：{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}\n"
+        f"地区：{weather['region']}\n"
+        f"天气：{weather['weather']}\n"
+        f"温度：{weather['temp']}\n"
+        f"风向：{weather['wind_dir']}\n"
+        f"\n"
+        f"今日待办：\n"
+        f"{todos}\n"
+        f"\n"
+        f"生日提醒：{birthday}\n"
+        f"在一起{love_day}\n"
+        f"\n"
+        f"{note_ch}\n"
+        f"{note_en}\n"
+        f"\n"
+        f"{weather['attribution']}"
+    )
+
     return {
-        "date": field(f"{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}"),
-        "region": field(weather["region"]),
-        "weather": field(weather["weather"]),
-        "temp": field(weather["temp"], "#E67E22"),
-        "wind_dir": field(weather["wind_dir"]),
-        "todos": field(todos),
-        "remaining": field(countdown, "#E64340" if overdue else "#173177"),
-        "birthday": field(birthday_text(config, now.date())),
-        "love_day": field(love_day),
-        "note_ch": field(note_ch, "#8E44AD"),
-        "note_en": field(note_en, "#888888"),
-        "attribution": field(weather["attribution"], "#999999"),
+        "content": field(content)
     }
 
 
