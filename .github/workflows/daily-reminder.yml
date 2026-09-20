@@ -45,6 +45,7 @@ jobs:
           WECHAT_WEATHER_TEMPLATE_ID: ${{ secrets.WECHAT_WEATHER_TEMPLATE_ID }}
           WECHAT_REMINDER_TEMPLATE_ID: ${{ secrets.WECHAT_REMINDER_TEMPLATE_ID }}
           WECHAT_OPEN_ID: ${{ secrets.WECHAT_OPEN_ID }}
+          WECHAT_OPEN_ID_2: ${{ secrets.WECHAT_OPEN_ID_2 }}
           QWEATHER_API_KEY: ${{ secrets.QWEATHER_API_KEY }}
           QWEATHER_API_HOST: ${{ vars.QWEATHER_API_HOST }}
         shell: bash

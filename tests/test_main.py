@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 from main import (
     TZ, ReminderError, build_message, load_config, next_birthday,
-    prepare_deliveries, remaining, send_message,
+    prepare_deliveries, recipient_openids, remaining, send_message,
 )
 
 
@@ -67,6 +67,16 @@ class ReminderTests(unittest.TestCase):
         ]
         data = build_message(self.config, self.weather, self.now)[1]
         self.assertEqual(data["todos"]["value"], title + "；第二项 下一行")
+
+    def test_two_recipients_and_empty_secret(self):
+        config = {"user": ["openid-one", "openid-two", "", "openid-one"]}
+        self.assertEqual(recipient_openids(config), ["openid-one", "openid-two"])
+
+    def test_recipients_require_at_least_one_openid(self):
+        with self.assertRaises(ReminderError):
+            recipient_openids({"user": ["", "  "]})
+        with self.assertRaises(ReminderError):
+            recipient_openids({"user": "openid-one"})
 
     def test_empty_tasks(self):
         self.config["todos"] = []

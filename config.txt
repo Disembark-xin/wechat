@@ -3,7 +3,8 @@
   "app_secret": "${WECHAT_APP_SECRET}",
   "template_id": "${WECHAT_TEMPLATE_ID}",
   "user": [
-    "${WECHAT_OPEN_ID}"
+    "${WECHAT_OPEN_ID}",
+    "${WECHAT_OPEN_ID_2}"
   ],
   "weather_key": "${QWEATHER_API_KEY}",
   "weather_api_host": "${QWEATHER_API_HOST}",

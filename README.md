@@ -51,7 +51,8 @@
 | `WECHAT_TEMPLATE_ID` | 旧 line1～line5 模板 ID，仅兼容模式使用 |
 | `WECHAT_WEATHER_TEMPLATE_ID` | 天气模板 ID |
 | `WECHAT_REMINDER_TEMPLATE_ID` | 生活提醒模板 ID |
-| `WECHAT_OPEN_ID` | 接收人的 OpenID |
+| `WECHAT_OPEN_ID` | 第一个接收人的 OpenID |
+| `WECHAT_OPEN_ID_2` | 第二个接收人的 OpenID |
 | `QWEATHER_API_KEY` | 新的和风天气 API Key |
 
 4. 在 `Variables` 新增 `QWEATHER_API_HOST`，填写专属 API Host，不要带 `https://`。

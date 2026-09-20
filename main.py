@@ -343,6 +343,20 @@ def send_message(
     print(f"发送成功：OpenID …{user[-6:]}，msgid={result.get('msgid', '')}")
 
 
+def recipient_openids(config: dict[str, Any]) -> list[str]:
+    raw_users = config.get("user", [])
+    if not isinstance(raw_users, list):
+        raise ReminderError("user 必须是包含 OpenID 的数组")
+    users: list[str] = []
+    for raw_user in raw_users:
+        user = str(raw_user).strip()
+        if user and user not in users:
+            users.append(user)
+    if not users:
+        raise ReminderError("user 必须包含至少一个有效的 OpenID")
+    return users
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="微信公众号每日提醒")
     parser.add_argument("--config", default="config.txt")
@@ -362,12 +376,9 @@ def main() -> int:
     pages = build_message(config, get_weather(config), now)
     deliveries = prepare_deliveries(config, pages)
     token = get_access_token(config)
-    users = config.get("user", [])
-    if not isinstance(users, list) or not users:
-        raise ReminderError("user 必须是包含至少一个 OpenID 的数组")
-    for user in users:
+    for user in recipient_openids(config):
         for template_id, data in deliveries:
-            send_message(config, token, str(user).strip(), data, template_id=template_id)
+            send_message(config, token, user, data, template_id=template_id)
     return 0
 
 
