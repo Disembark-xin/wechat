@@ -1,24 +1,25 @@
 {
-  "app_id": "${wx882b0e3936b59543}",
-  "app_secret": "${00de60a8ba3ad2e0bb033b8c233e1cff}",
-  "template_id": "${p2Nujcq0N10IHPYSa6gUYt_-HB-0JYLis2mBQ-7okVM}",
-  "user": ["${ofOP320Oc_kKCGY194ZRhsrjYWSM}"],
+  "app_id": "${WECHAT_APP_ID}",
+  "app_secret": "${WECHAT_APP_SECRET}",
+  "template_id": "${WECHAT_TEMPLATE_ID}",
+  "user": ["${WECHAT_OPEN_ID}"],
 
-  "weather_key": "${HE2209152218351029}",
-  "weather_api_host": "${km4t268kw5.re.qweatherapi.com}",
+  "weather_key": "${QWEATHER_API_KEY}",
+  "weather_api_host": "${QWEATHER_API_HOST}",
   "region": "许昌市",
 
   "birthdays": [
     {"name": "生日", "birthday": "2026-04-02"}
   ],
-  "love_date": "2026-08-21",
+  "love_date": "2026-08-21,
 
+  "note_ch": "该睡觉了，现在，马上！",
+  "note_en": "It's time for bed, now!",
   "url": "",
 
   "todos": [
-   {
-    "title": "记得带军训刀呦",
-    "status": "pending"
-  }
+    {"title": "完成今天最重要的工作", "due": "2026-09-21T18:00:00", "status": "pending"},
+    {"title": "整理本周计划", "due": "2026-09-25", "status": "pending"},
+    {"title": "长期事项", "status": "pending"}
   ]
 }
