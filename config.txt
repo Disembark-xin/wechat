@@ -9,17 +9,22 @@
   "region": "许昌市",
 
   "birthdays": [
-    {"name": "生日", "birthday": "2026-04-02"}
+    {
+      "name": "生日",
+      "birthday": "2026-04-02"
+    }
   ],
-  "love_date": "2026-08-21,
+
+  "love_date": "2026-08-21",
 
   "note_ch": "该睡觉了，现在，马上！",
   "note_en": "It's time for bed, now!",
   "url": "",
 
   "todos": [
-    {"title": "完成今天最重要的工作", "due": "2026-09-21T18:00:00", "status": "pending"},
-    {"title": "整理本周计划", "due": "2026-09-25", "status": "pending"},
-    {"title": "长期事项", "status": "pending"}
+    {
+      "title": "记得带军训刀呦",
+      "status": "pending"
+    }
   ]
 }
