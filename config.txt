@@ -2,29 +2,28 @@
   "app_id": "${WECHAT_APP_ID}",
   "app_secret": "${WECHAT_APP_SECRET}",
   "template_id": "${WECHAT_TEMPLATE_ID}",
-  "user": ["${WECHAT_OPEN_ID}"],
-
+  "user": [
+    "${WECHAT_OPEN_ID}"
+  ],
   "weather_key": "${QWEATHER_API_KEY}",
   "weather_api_host": "${QWEATHER_API_HOST}",
   "region": "许昌市",
-
   "birthdays": [
     {
       "name": "生日",
       "birthday": "2026-04-02"
     }
   ],
-
   "love_date": "2026-08-21",
-
   "note_ch": "该睡觉了，现在，马上！",
   "note_en": "It's time for bed, now!",
   "url": "",
-
   "todos": [
     {
       "title": "记得带军训刀呦",
       "status": "pending"
     }
-  ]
+  ],
+  "weather_template_id": "${WECHAT_WEATHER_TEMPLATE_ID}",
+  "reminder_template_id": "${WECHAT_REMINDER_TEMPLATE_ID}"
 }

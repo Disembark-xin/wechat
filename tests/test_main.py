@@ -4,27 +4,42 @@ import tempfile
 import unittest
 from datetime import date, datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from main import TZ, build_message, load_config, next_birthday, remaining
+from main import (
+    TZ, ReminderError, build_message, load_config, next_birthday,
+    prepare_deliveries, remaining, send_message,
+)
 
 
 class ReminderTests(unittest.TestCase):
     def setUp(self):
         self.now = datetime(2026, 9, 20, 8, 7, tzinfo=TZ)
         self.weather = {
-            "region": "郑州", "weather": "晴", "temp": "25°C",
+            "region": "许昌", "weather": "晴", "temp": "25°C",
             "wind_dir": "东南风", "attribution": "天气数据：和风天气",
+        }
+        self.config = {
+            "birthdays": [{"name": "生日", "birthday": "2026-04-02"}],
+            "love_date": "2026-08-21",
+            "todos": [{"title": "记得带军训刀呦", "status": "pending"}],
+            "note_ch": "该睡觉了，现在，马上！",
+            "note_en": "It's time for bed, now!",
         }
 
     def test_config_resolves_environment(self):
-        raw = {"app_secret": "${WECHAT_APP_SECRET}", "region": "郑州市"}
+        raw = {"weather_template_id": "${WECHAT_WEATHER_TEMPLATE_ID}",
+               "reminder_template_id": "${WECHAT_REMINDER_TEMPLATE_ID}"}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.txt"
-            path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
-            with patch.dict(os.environ, {"WECHAT_APP_SECRET": "secret-value"}):
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with patch.dict(os.environ, {
+                "WECHAT_WEATHER_TEMPLATE_ID": "weather-id",
+                "WECHAT_REMINDER_TEMPLATE_ID": "reminder-id",
+            }):
                 config = load_config(path)
-        self.assertEqual(config["app_secret"], "secret-value")
+        self.assertEqual(config, {"weather_template_id": "weather-id",
+                                  "reminder_template_id": "reminder-id"})
 
     def test_remaining_time(self):
         due = datetime(2026, 9, 20, 18, 7, tzinfo=TZ)
@@ -33,26 +48,57 @@ class ReminderTests(unittest.TestCase):
     def test_next_solar_birthday(self):
         self.assertEqual(next_birthday("1997-01-01", date(2026, 9, 20)), date(2027, 1, 1))
 
-    def test_message_is_paginated_into_five_short_fields(self):
-        config = {
-            "birthdays": [],
-            "todos": [{"title": "提交报告", "due": "2026-09-20T18:07:00"}],
-            "note_ch": "加油",
-            "note_en": "Keep going"
-        }
+    def test_requested_content_and_removals(self):
+        pages = build_message(self.config, self.weather, self.now)
+        self.assertEqual(len(pages), 2)
+        self.assertEqual(pages[0]["region"]["value"], "许昌")
+        self.assertEqual(pages[1]["todos"]["value"], "记得带军训刀呦")
+        self.assertEqual(pages[1]["birthday"]["value"], "距离生日还有 194 天")
+        self.assertEqual(pages[1]["love_day"]["value"], "已经 30 天")
+        rendered = json.dumps(pages, ensure_ascii=False)
+        for removed in ("剩余时间", "无截止时间", "该睡觉", "It's time", "和风天气", "内容一"):
+            self.assertNotIn(removed, rendered)
 
-        pages = build_message(config, self.weather, self.now)
+    def test_long_task_is_not_cut_and_completed_task_is_excluded(self):
+        title = "这是一条超过二十个字符但应该完整保留在一个字段里的待办事项"
+        self.config["todos"] = [
+            {"title": title}, {"title": "完成了", "status": "done"},
+            {"title": "第二项\n下一行"},
+        ]
+        data = build_message(self.config, self.weather, self.now)[1]
+        self.assertEqual(data["todos"]["value"], title + "；第二项 下一行")
 
-        self.assertGreaterEqual(len(pages), 2)
-        self.assertTrue(all(set(page) == {"line1", "line2", "line3", "line4", "line5"} for page in pages))
-        values = [page[f"line{i}"]["value"] for page in pages for i in range(1, 6)]
-        self.assertTrue(all(len(value) <= 20 for value in values))
-        message = "\n".join(values)
-        self.assertIn("天气：晴", message)
-        self.assertIn("提交报告", message)
-        self.assertIn("今天截止", message)
-        self.assertIn("生日提醒", message)
-        self.assertIn("加油", message)
+    def test_empty_tasks(self):
+        self.config["todos"] = []
+        data = build_message(self.config, self.weather, self.now)[1]
+        self.assertEqual(data["todos"]["value"], "今天没有未完成待办")
+
+    def test_two_template_ids_route_correct_data_to_wechat(self):
+        self.config.update(weather_template_id="weather-id", reminder_template_id="reminder-id")
+        pages = build_message(self.config, self.weather, self.now)
+        deliveries = prepare_deliveries(self.config, pages)
+        response = Mock()
+        response.json.return_value = {"errcode": 0, "msgid": "test"}
+        with patch("main.requests.post", return_value=response) as post:
+            for template_id, data in deliveries:
+                send_message(self.config, "test-token", "test-user", data, template_id=template_id)
+        payloads = [call.kwargs["json"] for call in post.call_args_list]
+        self.assertEqual([p["template_id"] for p in payloads], ["weather-id", "reminder-id"])
+        self.assertEqual(payloads[0]["data"], pages[0])
+        self.assertEqual(payloads[1]["data"], pages[1])
+
+    def test_partial_template_setup_fails_before_sending(self):
+        self.config["weather_template_id"] = "weather-id"
+        with self.assertRaises(ReminderError):
+            prepare_deliveries(self.config, build_message(self.config, self.weather, self.now))
+
+    def test_legacy_template_keeps_working_until_ids_are_added(self):
+        self.config["template_id"] = "legacy-id"
+        deliveries = prepare_deliveries(self.config, build_message(self.config, self.weather, self.now))
+        self.assertEqual(len(deliveries), 2)
+        self.assertEqual(deliveries[1][1]["line1"]["value"], "今日待办：记得带军训刀呦")
+        self.assertEqual(deliveries[1][1]["line4"]["value"], " ")
+        self.assertTrue(all(tid == "legacy-id" for tid, _ in deliveries))
 
 
 if __name__ == "__main__":

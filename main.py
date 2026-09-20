@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import random
 import re
 import sys
 from dataclasses import dataclass
@@ -260,9 +259,11 @@ def remaining(due: datetime | None, now: datetime) -> str:
 
 
 def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime) -> list[dict[str, dict[str, str]]]:
+    """两张卡：天气信息，以及一行待办、生日、纪念日。"""
     tasks = load_tasks(config)
-    todos = "\n".join(f"{i}. {task.title}" for i, task in enumerate(tasks, 1)) or "今天没有未完成待办"
-    countdown = "\n".join(f"{i}. {remaining(task.due, now)}" for i, task in enumerate(tasks, 1)) or "暂无"
+    # 模板负责显示标签；值保持完整，手机可按屏幕宽度自然换行。
+    todos = "；".join(" ".join(task.title.split()) for task in tasks) or "今天没有未完成待办"
+    birthday = "；".join(birthday_text(config, now.date()).splitlines())
 
     love_day = "未设置纪念日"
     if str(config.get("love_date", "")).strip():
@@ -272,61 +273,61 @@ def build_message(config: dict[str, Any], weather: dict[str, str], now: datetime
             raise ReminderError(f"love_date 格式错误：{config['love_date']}") from exc
         love_day = f"已经 {max(0, (now.date() - start).days)} 天"
 
-    note_ch = str(config.get("note_ch", "")).strip()
-    note_en = str(config.get("note_en", "")).strip()
-    if not note_ch and not note_en:
-        note_ch, note_en = random.choice([
-            ("把今天最重要的一件事做好。", "Do the most important thing first."),
-            ("慢一点没关系，别停下来。", "Small steps still move you forward."),
-            ("今天也要照顾好自己。", "Take good care of yourself today."),
-        ])
+    def field(value: str) -> dict[str, str]:
+        return {"value": value, "color": "#173177"}
 
-    def field(text: str, color: str = "#173177") -> dict[str, str]:
-        text = text if len(text) <= 600 else text[:599] + "…"
-        return {"value": text, "color": color}
-
-    birthday = birthday_text(config, now.date())
-
-    logical_lines = [
-        f"日期：{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}",
-        f"地区：{weather['region']}",
-        f"天气：{weather['weather']}",
-        f"温度：{weather['temp']}",
-        f"风向：{weather['wind_dir']}",
-        "今日待办：",
-        *todos.splitlines(),
-        "剩余时间：",
-        *countdown.splitlines(),
-        birthday,
-        f"在一起{love_day}",
-        note_ch,
-        note_en,
-        weather["attribution"],
+    return [
+        {
+            "date": field(f"{now:%Y年%m月%d日} 星期{WEEKDAYS[now.weekday()]}"),
+            "region": field(weather["region"]),
+            "weather": field(weather["weather"]),
+            "temp": field(weather["temp"]),
+            "wind_dir": field(weather["wind_dir"]),
+        },
+        {
+            "todos": field(todos),
+            "birthday": field(birthday),
+            "love_day": field(love_day),
+        },
     ]
 
-    # 测试号模板只稳定显示五个短字段；长行先切开，再按五行自动分页。
-    wrapped_lines: list[str] = []
-    for line in logical_lines:
-        wrapped_lines.extend([line[i:i + 20] for i in range(0, len(line), 20)] or [" "])
 
-    pages: list[dict[str, dict[str, str]]] = []
-    for start in range(0, len(wrapped_lines), 5):
-        batch = wrapped_lines[start:start + 5]
-        batch += [" "] * (5 - len(batch))
-        pages.append({
-            "line1": field(batch[0]),
-            "line2": field(batch[1]),
-            "line3": field(batch[2]),
-            "line4": field(batch[3]),
-            "line5": field(batch[4]),
-        })
-    return pages
+def prepare_deliveries(
+    config: dict[str, Any], pages: list[dict[str, dict[str, str]]]
+) -> list[tuple[str, dict[str, dict[str, str]]]]:
+    """优先使用两个专用模板；尚未配置时兼容已工作的 line1～line5 模板。"""
+    weather_id = str(config.get("weather_template_id", "")).strip()
+    reminder_id = str(config.get("reminder_template_id", "")).strip()
+    if weather_id or reminder_id:
+        if not weather_id or not reminder_id:
+            raise ReminderError("请同时配置 WECHAT_WEATHER_TEMPLATE_ID 和 WECHAT_REMINDER_TEMPLATE_ID")
+        return [(weather_id, pages[0]), (reminder_id, pages[1])]
+
+    template_id = required(config, "template_id")
+    labels = {
+        "date": "日期", "region": "地区", "weather": "天气",
+        "temp": "温度", "wind_dir": "风向",
+        "todos": "今日待办", "birthday": "生日提醒", "love_day": "在一起",
+    }
+    deliveries = []
+    for page in pages:
+        values = [f"{labels[key]}：{item['value']}" for key, item in page.items()]
+        values += [" "] * (5 - len(values))
+        data = {
+            f"line{i}": {"value": value, "color": "#173177"}
+            for i, value in enumerate(values, 1)
+        }
+        deliveries.append((template_id, data))
+    return deliveries
 
 
-def send_message(config: dict[str, Any], token: str, user: str, data: dict[str, dict[str, str]]) -> None:
+def send_message(
+    config: dict[str, Any], token: str, user: str,
+    data: dict[str, dict[str, str]], *, template_id: str | None = None,
+) -> None:
     payload: dict[str, Any] = {
         "touser": user,
-        "template_id": required(config, "template_id"),
+        "template_id": template_id or required(config, "template_id"),
         "data": data,
     }
     if str(config.get("url", "")).strip():
@@ -359,13 +360,14 @@ def main() -> int:
         return 0
 
     pages = build_message(config, get_weather(config), now)
+    deliveries = prepare_deliveries(config, pages)
     token = get_access_token(config)
     users = config.get("user", [])
     if not isinstance(users, list) or not users:
         raise ReminderError("user 必须是包含至少一个 OpenID 的数组")
     for user in users:
-        for page in pages:
-            send_message(config, token, str(user).strip(), page)
+        for template_id, data in deliveries:
+            send_message(config, token, str(user).strip(), data, template_id=template_id)
     return 0
 
 
